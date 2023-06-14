@@ -1,3 +1,38 @@
+# Authors: L. Cavallaro, T. Serafin, A.Liotta;  e metti te stesso in grassetto
+# Proof of concept implementation of Sparse Evolutionary Training (SET) on Embdedded systems on Malaria Dataset using Keras and a mask over weights.
+# RGB 8x8 resolution case
+
+# This implementation in inspired by the work of Mocanu et al.:
+# @article{Mocanu2018SET,
+# author = {Mocanu, Decebal Constantin and Mocanu, Elena and Stone, Peter and Nguyen, Phuong H. and Gibescu, Madeleine and Liotta, Antonio},
+# journal = {Nature Communications},
+# title = {Scalable Training of Artificial Neural Networks with Adaptive Sparse Connectivity inspired by Network Science},
+# year = {2018},
+# doi = {10.1038/s41467-018-04316-3}
+# }
+
+# This code and was tested with Python 3.10.0, Keras 2.12.0, Tensorflow 2.12.0, Numpy 1.23.5;
+# The code is distributed in the hope that it may be useful, but WITHOUT ANY WARRANTIES; The use of this software is entirely at the user's own risk;
+# For an easy understanding of the code functionality please read the following articles.
+# If you use parts of this code, please cite the following articles: 
+
+# @article{NUTMA2023,
+# title={Miniaturisation of Binary Classifiers through Sparse Neural Networks},
+# author={Cavallaro, Lucia and Serafin, Tommaso and Liotta, Antonio},
+# journal={Numerical Computations: Theory and Algorithms NUMTA 2023},
+# pages={in press},
+# year={2023}
+# }
+
+# @mastersthesis{SerafinMSc2023,
+# author = {Serafin, T.},
+# institution = {Free University of Bozen-Bolzano - ITA},
+# school = {Faculty of Enginnering},
+# note={M.Sc. in Software Engineering for Information Systems}
+# title = {Towards Efficient Miniaturisation of Binary Classifiers through Sparse Neural Networks: a Trade-off Analysis},
+# year = {to be published},
+# }
+
 import time
 import tensorflow as tf
 from tensorflow import keras
@@ -7,6 +42,9 @@ from tensorflow.keras.models import Model
 import tensorflow_model_optimization as tfmot
 import tempfile
 import numpy as np
+
+# Output:
+#   - Returns a Keras Sequential model representing the CNN
 
 def create_cnn():
     model = keras.Sequential([
@@ -24,6 +62,13 @@ def create_cnn():
     ])
     return model
 
+# Inputs:
+#     - x: Input tensor
+#     - num_layers: Number of layers in the dense block
+#     - growth_rate: Growth rate for the convolutional layers
+# Output:
+#     - Returns the output tensor of the dense block
+
 def dense_block(x, num_layers, growth_rate):
     for i in range(num_layers):
         # BN - ReLU - Conv(1x1) - BN - ReLU - Conv(3x3)
@@ -33,11 +78,15 @@ def dense_block(x, num_layers, growth_rate):
         x1 = BatchNormalization()(x1)
         x1 = Activation('relu')(x1)
         x1 = Conv2D(growth_rate, (3, 3), padding='same')(x1)
-        
         # Concatenate the output with the input
-        x = Concatenate()([x, x1])
-        
+        x = Concatenate()([x, x1])    
     return x
+
+# Inputs:
+#     - x: Input tensor
+#     - compression_factor: Compression factor for reducing the number of filters
+# Output:
+#     - Returns the output tensor of the transition layer
 
 def transition_layer(x, compression_factor):
     # BN - Conv(1x1) - AveragePooling(2x2)
@@ -45,6 +94,15 @@ def transition_layer(x, compression_factor):
     x = Conv2D(int(tf.keras.backend.int_shape(x)[-1] * compression_factor), (1, 1), padding='same')(x)
     x = AveragePooling2D((2, 2), strides=(2, 2))(x)
     return x
+
+# Inputs:
+#     - input_shape: Shape of the input data
+#     - num_classes: Number of classes for classification
+#     - num_layers_per_block: List specifying the number of layers in each dense block
+#     - growth_rate: Growth rate for the convolutional layers
+#     - compression_factor: Compression factor for reducing the number of filters in transition layers
+# Output:
+#     - Returns a Keras Model representing the DenseNet model
 
 def create_densenet(input_shape, num_classes, num_layers_per_block, growth_rate, compression_factor):
     # Input layer
@@ -70,6 +128,15 @@ def create_densenet(input_shape, num_classes, num_layers_per_block, growth_rate,
     model = Model(inputs=inputs, outputs=outputs)
     return model
 
+# Inputs:
+#     - x: Input tensor
+#     - filters: Number of filters for the convolutional layers
+#     - kernel_size: Size of the convolutional kernel
+#     - strides: Strides for the convolutional layers
+#     - activation: Activation function to use
+# Output:
+#     - Returns the output tensor of the residual block
+
 def residual_block(x, filters, kernel_size=(3, 3), strides=(1, 1), activation='relu'):
     y = Conv2D(filters, kernel_size=kernel_size, strides=strides, padding='same')(x)
     y = BatchNormalization()(y)
@@ -84,6 +151,12 @@ def residual_block(x, filters, kernel_size=(3, 3), strides=(1, 1), activation='r
     y = add([x, y])
     y = Activation(activation)(y)
     return y
+
+# Inputs:
+#     - input_shape: Shape of the input data
+#     - num_classes: Number of classes for classification
+# Output:
+#     - Returns a Keras Model representing the ResNet model
 
 def create_resnet(input_shape, num_classes):
     inputs = Input(shape=input_shape)
@@ -110,6 +183,12 @@ def create_resnet(input_shape, num_classes):
     model = Model(inputs=inputs, outputs=outputs)
     return model
 
+# Inputs:
+#     - model: Keras Model to be pruned
+#     - target_sparsity: Target sparsity for pruning
+# Output:
+#     - Returns the pruned Keras Model
+
 def prune_model(model, target_sparsity):
     pruning_params = {
         'pruning_schedule': tfmot.sparsity.keras.ConstantSparsity(
@@ -126,9 +205,11 @@ def prune_model(model, target_sparsity):
 
     return model_pruned
 
-import time
-import numpy as np
-import tensorflow as tf
+# Inputs:
+#     - interpreter: TensorFlow Lite interpreter
+#     - data_generator: Data generator for generating input data
+# Output:
+#     - Returns a tuple containing accuracy, precision, recall, and inference time per frame
 
 def evaluate_model(interpreter, data_generator):
     input_index = interpreter.get_input_details()[0]["index"]
@@ -178,6 +259,8 @@ def evaluate_model(interpreter, data_generator):
 
     return accuracy, precision.numpy(), recall.numpy(), inference_time_per_frame
 
+# No inputs or outputs specified.
+# This function contains the main logic for running the program.
 
 def main():
     # Choose the model
