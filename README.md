@@ -1,6 +1,7 @@
 Authors: L. Cavallaro, T. Serafin, A.Liotta;  
 Proof of concept implementation of Sparse Evolutionary Training (SET) on Embdedded systems on Malaria Dataset using Keras and a mask over weights
 This implementation in inspired by the work of Mocanu et al.:
+
 @article{Mocanu2018SET,
 author = {Mocanu, Decebal Constantin and Mocanu, Elena and Stone, Peter and Nguyen, Phuong H. and Gibescu, Madeleine and Liotta, Antonio},
 journal = {Nature Communications},
@@ -13,6 +14,7 @@ This code and was tested with Python 3.10.0, Keras 2.12.0, Tensorflow 2.12.0, Nu
 The code is distributed in the hope that it may be useful, but WITHOUT ANY WARRANTIES; The use of this software is entirely at the user's own risk;
 For an easy understanding of the code functionality please read the following articles.
 If you use parts of this code, please cite the following articles:
+
 @article{NUTMA2023,
 title={Miniaturisation of Binary Classifiers through Sparse Neural Networks},
 author={Cavallaro, Lucia and Serafin, Tommaso and Liotta, Antonio},
