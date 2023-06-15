@@ -1,4 +1,4 @@
-# Authors: L. Cavallaro, T. Serafin, A.Liotta;  e metti te stesso in grassetto
+# Authors: L. Cavallaro, T. Serafin, A.Liotta;  
 # Proof of concept implementation of Sparse Evolutionary Training (SET) on Embdedded systems on Malaria Dataset using Keras and a mask over weights.
 # RGB 8x8 resolution case
 
